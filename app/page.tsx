@@ -32,48 +32,38 @@ export default function Home() {
       canvas.style.top = `-${padding}px`;
     };
 
-    const getNoise = (x: number, y: number, time: number, offset = 0) => {
-      const scale = 2.0; // Pattern Scale
-      const speed = 0.3; // Speed
-      const liquify = 0.07; // Liquify effect
+    const getNoise = (x: number, y: number, time: number) => {
+      const patternScale = 2.0;
+      const speed = 0.3;
+      const liquify = 0.07;
       
       return noise3D(
-        (x * scale) / 1000 + time * speed + offset,
-        (y * scale) / 1000,
-        liquify * time
+        (x * patternScale) / 500,
+        (y * patternScale) / 500,
+        time * speed + liquify * time
       );
     };
 
     const calculateColor = (x: number, y: number, time: number) => {
-      const dispersion = 0.015; // Chromatic aberration
-      const edge = 0.4; // Edge threshold
-      const blur = 0.005; // Pattern blur
-
-      // RGB kanalları için farklı offset'lerle noise hesaplıyoruz
-      const r = getNoise(x, y, time, dispersion);
-      const g = getNoise(x, y, time);
-      const b = getNoise(x, y, time, -dispersion);
-
-      // Blur efekti için çevre piksellerin ortalamasını alıyoruz
-      const blurOffset = 2;
-      const rBlur = (
-        getNoise(x - blurOffset, y, time, dispersion) +
-        getNoise(x + blurOffset, y, time, dispersion) +
-        getNoise(x, y - blurOffset, time, dispersion) +
-        getNoise(x, y + blurOffset, time, dispersion)
-      ) / 4;
-
-      // Edge detection ve renk hesaplama
-      const edgeR = r > edge ? 255 : r * 200 + 50;
-      const edgeG = g > edge ? 255 : g * 200 + 50;
-      const edgeB = b > edge ? 255 : b * 200 + 50;
-
-      // Blur ile karıştırma
-      const finalR = Math.min(255, edgeR + rBlur * blur * 1000);
-      const finalG = Math.min(255, edgeG + rBlur * blur * 1000);
-      const finalB = Math.min(255, edgeB + rBlur * blur * 1000);
-
-      return `rgb(${finalR}, ${finalG}, ${finalB})`;
+      const edge = 0.4;
+      const patternBlur = 0.005;
+      
+      // Ana noise değeri
+      const noiseValue = getNoise(x, y, time);
+      
+      // Blur için çevre pikseller
+      const blurRadius = 3;
+      let blurSum = 0;
+      for (let ox = -blurRadius; ox <= blurRadius; ox++) {
+        for (let oy = -blurRadius; oy <= blurRadius; oy++) {
+          blurSum += getNoise(x + ox, y + oy, time);
+        }
+      }
+      const blurAvg = blurSum / ((blurRadius * 2 + 1) ** 2);
+      
+      // Keskin kenarlar için threshold
+      const finalValue = noiseValue + blurAvg * patternBlur;
+      return finalValue > edge ? "#fff" : "#000";
     };
 
     const animate = () => {
@@ -81,15 +71,16 @@ export default function Home() {
       frame = requestAnimationFrame(animate);
       time += 0.01;
 
-      // Metalik gri arka plan
-      ctx.fillStyle = "#E8E8E8";
+      ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      for (let x = 0; x < canvas.width; x += 1) {
-        for (let y = 0; y < canvas.height; y += 1) {
+      for (let x = 0; x < canvas.width; x += 2) {
+        for (let y = 0; y < canvas.height; y += 2) {
           const color = calculateColor(x, y, time);
-          ctx.fillStyle = color;
-          ctx.fillRect(x, y, 1, 1);
+          if (color === "#000") { // Sadece siyah pikselleri çiziyoruz
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 2, 2);
+          }
         }
       }
     };
@@ -113,17 +104,17 @@ export default function Home() {
             className="absolute rounded-3xl"
             style={{ imageRendering: 'pixelated' }}
           />
-          <div ref={containerRef} className="relative z-10 bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20">
+          <div ref={containerRef} className="relative z-10 bg-black/30 backdrop-blur-sm p-8 rounded-2xl border border-white/10">
             <Image
               src="/next.svg"
               alt="Next.js logo"
               width={180}
               height={38}
               priority
-              className="mb-8"
+              className="mb-8 invert"
             />
-            <h1 className="text-2xl font-bold mb-4 text-gray-800">Liquid Metal Effect</h1>
-            <p className="text-gray-600">
+            <h1 className="text-2xl font-bold mb-4 text-white">Liquid Metal Effect</h1>
+            <p className="text-gray-300">
               Bu efekt simplex-noise kullanılarak oluşturulmuş sıvı metal animasyonudur.
             </p>
           </div>
