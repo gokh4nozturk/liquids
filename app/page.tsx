@@ -33,17 +33,23 @@ export default function Home() {
     };
 
     const calculateColor = (x: number, y: number, time: number) => {
-      const scale = 0.005;
-      const edge = 0.07;
-      const speed = 0.2;
-      const turbulence = 0.5;
-
+      const scale = 0.004;
+      const speed = 0.15;
+      const turbulence = 0.8;
+      
       const noiseValue1 = noise3D(x * scale, y * scale, time * speed);
       const noiseValue2 = noise3D(x * scale * 2, y * scale * 2, time * speed * 1.5);
+      const noiseValue3 = noise3D(x * scale * 4, y * scale * 4, time * speed * 2);
       
-      const finalNoise = (noiseValue1 + noiseValue2 * turbulence) / (1 + turbulence);
+      const baseNoise = (noiseValue1 + noiseValue2 * turbulence) / (1 + turbulence);
+      const highlight = Math.max(0, noiseValue3);
       
-      return finalNoise > edge ? "#000" : "#fff";
+      const baseColor = Math.floor((baseNoise * 0.5 + 0.5) * 200 + 55);
+      const highlightIntensity = Math.floor(highlight * 100);
+      
+      const finalColor = Math.min(255, baseColor + highlightIntensity);
+      
+      return `rgb(${finalColor}, ${finalColor}, ${finalColor})`;
     };
 
     const animate = () => {
@@ -51,16 +57,14 @@ export default function Home() {
       frame = requestAnimationFrame(animate);
       time += 0.01;
 
-      ctx.fillStyle = "#000";
+      ctx.fillStyle = "#1a1a1a";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      for (let x = 0; x < canvas.width; x += 2) {
-        for (let y = 0; y < canvas.height; y += 2) {
+      for (let x = 0; x < canvas.width; x += 1) {
+        for (let y = 0; y < canvas.height; y += 1) {
           const color = calculateColor(x, y, time);
-          if (color === "#fff") {
-            ctx.fillStyle = color;
-            ctx.fillRect(x, y, 2, 2);
-          }
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y, 1, 1);
         }
       }
     };
@@ -84,7 +88,7 @@ export default function Home() {
             className="absolute rounded-3xl"
             style={{ imageRendering: 'pixelated' }}
           />
-          <div ref={containerRef} className="relative z-10 bg-black/40 backdrop-blur-sm p-8 rounded-2xl border border-white/10">
+          <div ref={containerRef} className="relative z-10 bg-black/30 backdrop-blur-sm p-8 rounded-2xl border border-white/10">
             <Image
               src="/next.svg"
               alt="Next.js logo"
